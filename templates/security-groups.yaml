@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Security groups"
+
+Parameters:
+  Environment:
+    Description: Product name
+    Type: String
+    Default: SampleApp
+
+Resources:
+  ExternalAlbSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: "Security group for external ALB"
+      GroupName: !Sub "${Environment}-ExternalAlbSg"
+      SecurityGroupEgress: 
+        - CidrIp: "0.0.0.0/0"
+          Description: "Allow all outgoing traffic"
+          FromPort: -1
+          IpProtocol: -1
+          ToPort: -1
+      SecurityGroupIngress: 
+        - CidrIp: "0.0.0.0/0"
+          Description: "Allow incoming https traffic to port 443"
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      Tags: 
+        - Key: Name
+          Value: !Sub "${Environment}-ExternalAlbSg"
+      VpcId: 
+        Fn::ImportValue: 
+          !Sub "${Environment}-VpcId"
+
+  AppServerSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: "Security group for Application server"
+      GroupName: !Sub "${Environment}-AppServerSg"
+      SecurityGroupEgress: 
+        - CidrIp: "0.0.0.0/0"
+          Description: "Allow all outbound traffic"
+          FromPort: 0
+          IpProtocol: -1
+          ToPort: 65635
+      SecurityGroupIngress: 
+        - SourceSecurityGroupId: !GetAtt ExternalAlbSg.GroupId
+          Description: "Allow incoming http traffic from alb to port 80"
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+      Tags: 
+        - Key: Name
+          Value: !Sub "${Environment}-AppServerSg"
+      VpcId: 
+        Fn::ImportValue: 
+          !Sub "${Environment}-VpcId"
+
+Outputs:
+  ExternalAlbSgId:
+    Description: Security group id of External ALB
+    Value: !GetAtt ExternalAlbSg.GroupId
+    Export: 
+      Name: !Sub "${Environment}-ExternalAlbSg"
+
+  AppServerSg:
+    Description: Security group id of Application Server
+    Value: !GetAtt ExternalAlbSg.GroupId
+    Export: 
+      Name: !Sub "${Environment}-AppServerSg"
+  
