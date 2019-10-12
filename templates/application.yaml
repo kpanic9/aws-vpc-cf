@@ -1,0 +1,274 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Deploy application"
+
+Parameters:
+  Environment:
+    Description: Product name
+    Type: String
+    Default: SampleApp
+  
+  AppServerAMI:
+    Description: AMI ID for the application server
+    Type: String
+    Default: ami-04b9e92b5572fa0d1
+  
+  DesiredInstances:
+    Description: Desired number of app server instances
+    Type: Number
+    Default: 1
+  
+  MinimumInstances:
+    Description: Minimum number of app server instances
+    Type: Number
+    Default: 1
+
+  MaximumInstances:
+    Description: Maximum number of instances
+    Type: Number
+    Default: 5
+
+  InstanceType:
+    Description: App server instance type
+    Type: String
+    Default: t2.micro
+  
+  CertificateArn:
+    Description: External ALB Certificate
+    Default: aaa
+    Type: String
+
+  R53PublicZoneId:
+    Description: "Zone id of public route53 zone"
+    Type: String
+    Default: "Z2ZV4XL5M2RLPH"
+  
+  AlbDnsRecord:
+    Description: "DNS Record to create cname for alb"
+    Type: String
+    Default: "awscftest.tk"
+
+Resources:
+
+  AppServerIAMRole:
+    Type: AWS::IAM::Role
+    Properties: 
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com" 
+            Action: 
+              - "sts:AssumeRole"
+      Description: "IAM role for app server"
+      ManagedPolicyArns: 
+        - "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
+      MaxSessionDuration: 3600
+      Path: "/"
+      RoleName: !Sub "${Environment}AppServerIamRole"  
+      Tags: 
+        - Key: Name
+          Value: !Sub "${Environment}AppServerIamRole"    
+
+  AppServerInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties: 
+      InstanceProfileName: !Sub "${Environment}AppServerInstanceProfile"
+      Path: "/"
+      Roles: 
+        - !Ref AppServerIAMRole
+  
+  AppLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties: 
+      AssociatePublicIpAddress: false
+      ImageId: !Ref AppServerAMI
+      InstanceType: !Ref InstanceType
+      InstanceMonitoring: false
+      IamInstanceProfile: !Ref AppServerInstanceProfile
+      LaunchConfigurationName: !Sub "${Environment}LaunchConfig"
+      SecurityGroups: 
+        - Fn::ImportValue: 
+            !Sub "${Environment}-AppServerSg"
+      UserData: 
+        Fn::Base64:
+          !Sub |
+          #!/bin/bash
+          wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
+          dpkg -i amazon-ssm-agent.deb
+          systemctl enable amazon-ssm-agent
+          systemctl start amazon-ssm-agent
+          
+          # this is going to slow down the rapid startup time for application servers
+          # but not going to bake AMI for the test
+          apt install nginx -y
+          systemctl enable nginx
+          systemctl start nginx
+
+          # deploy app
+          # options: Download the files from a S3 bucket
+          #          Again ami baking
+          echo "Hello, RSVP...!" > /var/www/html/index.html
+
+  AppASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties: 
+      AutoScalingGroupName: !Sub "${Environment}AppServerASG"
+      AvailabilityZones: 
+        - !Sub "${AWS::Region}a"
+        - !Sub "${AWS::Region}b"
+        - !Sub "${AWS::Region}c"
+      Cooldown: 300
+      DesiredCapacity: !Ref DesiredInstances
+      HealthCheckGracePeriod: 30
+      HealthCheckType: "EC2"
+      LaunchConfigurationName: !Ref AppLaunchConfig
+      MaxSize: !Ref MaximumInstances
+      MinSize: !Ref MinimumInstances
+      Tags: 
+        - Key: Name
+          Value: !Sub "${Environment}AppServerASG"
+          PropagateAtLaunch: true
+      TargetGroupARNs: 
+        - !Ref AppTargetGroup
+      # LifecycleHookSpecificationList:
+      #   - LifecycleTransition: "autoscaling:EC2_INSTANCE_TERMINATING"
+      #     LifecycleHookName: "KillUnhealthyInstances"
+      #     HeartbeatTimeout: 4800
+      VPCZoneIdentifier:
+        - Fn::ImportValue: 
+            !Sub "${Environment}-PrivateSubnetAId"
+        - Fn::ImportValue: 
+            !Sub "${Environment}-PrivateSubnetBId"
+        - Fn::ImportValue: 
+            !Sub "${Environment}-PrivateSubnetCId"
+
+  ScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AppASG
+      Cooldown: '300'
+      ScalingAdjustment: '1'
+
+  CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: '2'
+      Statistic: Average
+      Threshold: '60'
+      AlarmDescription: Alarm if CPU too high or metric disappears indicating instance is down
+      Period: '300'
+      AlarmActions: 
+        - !Ref ScaleUpPolicy
+      Namespace: AWS/EC2
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref AppASG
+      ComparisonOperator: GreaterThanThreshold
+      MetricName: CPUUtilization
+
+  ScaleDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AppASG
+      Cooldown: '300'
+      ScalingAdjustment: '-1'
+
+  CPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: '2'
+      Statistic: Average
+      Threshold: '90'
+      AlarmDescription: Alarm if CPU too high or metric disappears indicating instance is down
+      Period: '300'
+      AlarmActions: 
+        - !Ref ScaleDownPolicy
+      Namespace: AWS/EC2
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref AppASG
+      ComparisonOperator: LessThanThreshold
+      MetricName: CPUUtilization
+
+  AppTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties: 
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: "/"
+      HealthCheckPort: 80
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      Matcher: 
+        HttpCode: "200"
+      Name: !Sub "${Environment}AppTargetGroup"
+      Port: 80
+      Protocol: HTTP
+      Tags: 
+        - Key: Name
+          Value: !Sub "${Environment}AppTargetGroup"
+      UnhealthyThresholdCount: 2
+      VpcId: 
+        Fn::ImportValue: 
+          !Sub "${Environment}-VpcId"
+
+  AppALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties: 
+      IpAddressType: "ipv4"
+      Name: !Sub "${Environment}ExternalALB"
+      Scheme: "internet-facing"
+      SecurityGroups: 
+        - Fn::ImportValue: 
+            !Sub "${Environment}-ExternalAlbSg"
+      Subnets: 
+        - Fn::ImportValue: 
+            !Sub "${Environment}-PublicSubnetAId"
+        - Fn::ImportValue: 
+            !Sub "${Environment}-PublicSubnetBId"
+        - Fn::ImportValue: 
+            !Sub "${Environment}-PublicSubnetCId"
+      Tags: 
+        - Key: Name
+          Value: !Sub "${Environment}ExternalALB"
+      Type: "application"
+
+  AppALBListner:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      # Certificates: 
+      #   - !Ref CertificateArn
+      # SslPolicy: "ELBSecurityPolicy-2016-08"
+      DefaultActions: 
+        - TargetGroupArn: !Ref AppTargetGroup
+          Type: forward
+      LoadBalancerArn: !Ref AppALB
+      Port: 443
+      Protocol: HTTP
+
+  # DnsRecord:
+  #   Type: AWS::Route53::RecordSet
+  #   Properties: 
+  #     AliasTarget: 
+  #       AliasTarget
+  #     Comment: "DNS Record for public alb"
+  #     HostedZoneId: !Ref R53PublicZoneId
+  #     Name: !Ref AlbDnsRecord
+  #     ResourceRecords: 
+  #       - !GetAtt AppALB.DNSName
+  #     SetIdentifier: String
+  #     TTL: 300
+  #     Type: CNAME
+
+
+Outputs:
+  ExternalAlbDnsName:
+    Description: DNS record of external alb
+    Value: !GetAtt AppALB.DNSName
+    Export: 
+      Name: !Sub "${Environment}-Extenal-Alb-DNS-Record"

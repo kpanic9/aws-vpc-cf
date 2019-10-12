@@ -1,0 +1,38 @@
+[
+    {
+        "ParameterKey": "Environment",
+        "ParameterValue": "RsApp"
+    },
+    {
+        "ParameterKey": "AppServerAMI",
+        "ParameterValue": "ami-0d5d9d301c853a04a"
+    },
+    {
+        "ParameterKey": "DesiredInstances",
+        "ParameterValue": "1"
+    },
+    {
+        "ParameterKey": "MinimumInstances",
+        "ParameterValue": "1"
+    },
+    {
+        "ParameterKey": "MaximumInstances",
+        "ParameterValue": "5"
+    },
+    {
+        "ParameterKey": "InstanceType",
+        "ParameterValue": "t2.micro"
+    },
+    {
+        "ParameterKey": "CertificateArn",
+        "ParameterValue": "RsApp"
+    },  
+    {
+        "ParameterKey": "R53PublicZoneId",
+        "ParameterValue": "Z2ZV4XL5M2RLPH"
+    },   
+    {
+        "ParameterKey": "AlbDnsRecord",
+        "ParameterValue": "app.awscftest.tk"
+    }
+]
