@@ -266,7 +266,6 @@ Resources:
   #     Name: !Ref AlbDnsRecord
   #     ResourceRecords: 
   #       - !GetAtt AppALB.DNSName
-  #     SetIdentifier: String
   #     TTL: 300
   #     Type: CNAME
 

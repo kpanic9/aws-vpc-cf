@@ -1,25 +1,22 @@
 # AWS-CloudFormation    
-
-Goto https://www.freenom.com/ create an account and login   
-Check for availability of a sample domain like 'awscftest.tk'    
-Select the domain and checkout. This will go to the next screen, but before going forward we need to create the R53 Zone.   
-
-Go to aws Route 53 Console    
-Create a publicaly hosted zone (Eg: 'awscftest.tk')
-Update the 'R53PublicZoneId' and 'AlbDnsRecord' (Eg: app.awscftest.tk) paremeters in env/application.json file    
-Get the ns record entries and find their ip addresses using, nslookup {dns-name} and not down the nameserver ip addresses.    
-
-Back on https://www.freenom.com/, select 'use dns' and 'Use your own dns server'    
-Insert two ns ip addresses for Route53 Zone found earlier    
-Goto ACM Console and create a certificate using Domain Authentication
-Update the 'CertificateArn' paremeter in env/application.json file 
     
     
      
 Note: Currently the code for public dns name and ssl certificaten is commented(Onwards line 244) as
 I do not have a public domain to test it.
+
+Steps for using public domain   
    
+Goto a public domain registry and register domain   
+Create Route53 Zone for that domain   
+Get the NS record values for that zone and update Domain Registry   
+Update the 'R53PublicZoneId' paremeters in env/application.json file   
+Update 'AlbDnsRecord' (Eg: app.awscftest.com) paremeters in env/application.json file     
+Goto ACM Console and create a certificate using Domain Authentication   
+Update the 'CertificateArn' paremeter in env/application.json file     
+Uncomment the code in templates/application.yaml from line number 249    
    
+    
     
 ## Deploy Application   
      
