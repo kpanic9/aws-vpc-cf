@@ -1,21 +1,25 @@
-# AWS-CloudFormation
+# AWS-CloudFormation    
 
-Goto https://www.freenom.com/ // create an account and login
-Check for availability of a sample domain like 'awscftest'
-Select the domain and checkout
+Goto https://www.freenom.com/ create an account and login   
+Check for availability of a sample domain like 'awscftest.tk'    
+Select the domain and checkout. This will go to the next screen, but before going forward we need to create the R53 Zone.   
 
-Go to aws Route 53 Console 
-Create a publicaly hosted zone: 'awscftest.tk'
-Get the ns record entries and find their ip addresses using, nslookup {dns-name}
+Go to aws Route 53 Console    
+Create a publicaly hosted zone (Eg: 'awscftest.tk')
+Update the 'R53PublicZoneId' and 'AlbDnsRecord' (Eg: app.awscftest.tk) paremeters in env/application.json file    
+Get the ns record entries and find their ip addresses using, nslookup {dns-name} and not down the nameserver ip addresses.    
 
-On https://www.freenom.com/ Select 'use dns' and 'Use your own dns server'
-Insert two ns ip addresses for Route53 Zone found 
-
-Get the ZoneID and domain name
-
+Back on https://www.freenom.com/, select 'use dns' and 'Use your own dns server'    
+Insert two ns ip addresses for Route53 Zone found earlier    
 Goto ACM Console and create a certificate using Domain Authentication
+Update the 'CertificateArn' paremeter in env/application.json file 
     
     
+     
+Note: Currently the code for public dns name and ssl certificaten is commented(Onwards line 244) as
+I do not have a public domain to test it.
+   
+   
     
 ## Deploy Application   
      
@@ -157,12 +161,12 @@ python2.7 awslogs-agent-setup.py -n --region ap-southeast-2 -c ./awslogs-config
     
 ### Serve via a CloudFront distribution   
     
-CloudFront ---> Create Distribution
-Origin Domain Name: Select the elb
-Enable logging and add s3 bucket with log prefix
-Set the distribution state to enabled and create the distribution
+CloudFront ---> Create Distribution   
+Origin Domain Name: Select the elb   
+Enable logging and add s3 bucket with log prefix   
+Set the distribution state to enabled and create the distribution   
 
-Then from the Route53 or DNS server we have to create a CNAME record pointing to the Domain Name of the cloudfront distribution
+Then from the Route53 or DNS server we have to create a CNAME record pointing to the Domain Name of the cloudfront distribution   
    
    
    
@@ -170,7 +174,7 @@ Then from the Route53 or DNS server we have to create a CNAME record pointing to
    
 ### Use Lambda to handle error pages   
    
-Lambda@Edge can be used for this task.
+Lambda@Edge can be used for this task.   
 
 
 

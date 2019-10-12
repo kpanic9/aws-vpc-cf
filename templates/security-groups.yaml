@@ -40,9 +40,9 @@ Resources:
       SecurityGroupEgress: 
         - CidrIp: "0.0.0.0/0"
           Description: "Allow all outbound traffic"
-          FromPort: 0
+          FromPort: -1
           IpProtocol: -1
-          ToPort: 65635
+          ToPort: -1
       SecurityGroupIngress: 
         - SourceSecurityGroupId: !GetAtt ExternalAlbSg.GroupId
           Description: "Allow incoming http traffic from alb to port 80"
@@ -65,7 +65,7 @@ Outputs:
 
   AppServerSg:
     Description: Security group id of Application Server
-    Value: !GetAtt ExternalAlbSg.GroupId
+    Value: !GetAtt AppServerSg.GroupId
     Export: 
       Name: !Sub "${Environment}-AppServerSg"
   

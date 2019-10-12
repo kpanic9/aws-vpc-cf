@@ -54,9 +54,6 @@ Resources:
       - Key: Name
         Value: !Sub "${Environment}-WebAppStackVpc"
 
-
-
-
   PublicSubnetA:
     Type: AWS::EC2::Subnet
     Properties: 
@@ -170,7 +167,6 @@ Resources:
           Value: !Sub "${Environment}-PrivateSubnetC"
       VpcId: !Ref Vpc
 
-
   NatgwElasticIpA:
     Type: AWS::EC2::EIP
     Properties:
@@ -206,8 +202,6 @@ Resources:
       RouteTableId: !Ref PrivateRouteTableA
       SubnetId: !Ref PrivateSubnetA
 
-
-
   NatgwElasticIpB:
     Type: AWS::EC2::EIP
     Properties:
@@ -242,8 +236,6 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRouteTableB
       SubnetId: !Ref PrivateSubnetB
-
-
 
   NatgwElasticIpC:
     Type: AWS::EC2::EIP
