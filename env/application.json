@@ -5,7 +5,7 @@
     },
     {
         "ParameterKey": "AppServerAMI",
-        "ParameterValue": "ami-0d5d9d301c853a04a"
+        "ParameterValue": "ami-0328aad0f6218c429"
     },
     {
         "ParameterKey": "DesiredInstances",

@@ -1,4 +1,4 @@
-region = us-east-2
+region = ap-southeast-2
 
 network:
 	aws cloudformation create-stack --stack-name Networking --template-body file://templates/network.yaml \

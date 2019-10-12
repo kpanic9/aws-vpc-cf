@@ -95,11 +95,14 @@ Resources:
         Fn::Base64:
           !Sub |
           #!/bin/bash
-          wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
-          dpkg -i amazon-ssm-agent.deb
-          systemctl enable amazon-ssm-agent
-          systemctl start amazon-ssm-agent
-          
+          # snap install amazon-ssm-agent --classic
+          # systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
+          # systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+          # wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
+          # dpkg -i amazon-ssm-agent.deb
+          # systemctl enable amazon-ssm-agent
+          # systemctl start amazon-ssm-agent
+
           # this is going to slow down the rapid startup time for application servers
           # but not going to bake AMI for the test
           apt install nginx -y
@@ -110,19 +113,21 @@ Resources:
           # options: Download the files from a S3 bucket
           #          Again ami baking
           echo "Hello, RSVP...!" > /var/www/html/index.html
+          systemctl restart nginx
+
 
   AppASG:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
-      AutoScalingGroupName: !Sub "${Environment}AppServerASG"
+      AutoScalingGroupName: !Sub "${Environment}AppServerASG2"
       AvailabilityZones: 
         - !Sub "${AWS::Region}a"
         - !Sub "${AWS::Region}b"
         - !Sub "${AWS::Region}c"
       Cooldown: 300
       DesiredCapacity: !Ref DesiredInstances
-      HealthCheckGracePeriod: 30
-      HealthCheckType: "EC2"
+      HealthCheckGracePeriod: 180
+      HealthCheckType: "ELB"
       LaunchConfigurationName: !Ref AppLaunchConfig
       MaxSize: !Ref MaximumInstances
       MinSize: !Ref MinimumInstances
