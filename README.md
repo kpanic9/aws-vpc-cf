@@ -15,9 +15,11 @@ Update 'AlbDnsRecord' (Eg: app.awscftest.com) paremeters in env/application.json
 Goto ACM Console and create a certificate using Domain Authentication   
 Update the 'CertificateArn' paremeter in env/application.json file     
 Uncomment the code in templates/application.yaml from line number 249    
-   
+       
+For accessing the webpage now, get the loadbalancer dns name and goto: http://{load-balancer-dns-name}:443/    
     
-    
+     
+      
 ## Deploy Application   
      
 ```bash
