@@ -25,7 +25,7 @@
     },
     {
         "ParameterKey": "CertificateArn",
-        "ParameterValue": "RsApp"
+        "ParameterValue": "arn:aws:iam::491032877027:server-certificate/rsvp-certificate"
     },  
     {
         "ParameterKey": "R53PublicZoneId",

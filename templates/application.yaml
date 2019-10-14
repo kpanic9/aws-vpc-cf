@@ -112,9 +112,8 @@ Resources:
           # deploy app
           # options: Download the files from a S3 bucket
           #          Again ami baking
-          echo "Hello, RSVP...!" > /var/www/html/index.html
+          echo "<h2 align='center'>Hello, RSVP...!</h2>" > /var/www/html/index.html
           systemctl restart nginx
-
 
   AppASG:
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -246,15 +245,15 @@ Resources:
   AppALBListner:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties: 
-      # Certificates: 
-      #   - !Ref CertificateArn
-      # SslPolicy: "ELBSecurityPolicy-2016-08"
+      Certificates: 
+        - CertificateArn: !Ref CertificateArn
+      SslPolicy: "ELBSecurityPolicy-2016-08"
       DefaultActions: 
         - TargetGroupArn: !Ref AppTargetGroup
           Type: forward
       LoadBalancerArn: !Ref AppALB
       Port: 443
-      Protocol: HTTP
+      Protocol: HTTPS
 
   # DnsRecord:
   #   Type: AWS::Route53::RecordSet
@@ -268,7 +267,6 @@ Resources:
   #       - !GetAtt AppALB.DNSName
   #     TTL: 300
   #     Type: CNAME
-
 
 Outputs:
   ExternalAlbDnsName:
