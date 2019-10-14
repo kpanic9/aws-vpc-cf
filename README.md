@@ -1,6 +1,7 @@
 # AWS-CloudFormation-VPC    
      
-Note: App stack is using a self signed certificate   
+Note: App stack is using a self signed certificate      
+	  Instances can be accessed from Systems Manager
 
 ToDO:   
 1. Add NACLs to add more fine grained controlled traffic in subnets
