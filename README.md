@@ -1,41 +1,58 @@
-# AWS-CloudFormation    
-    
-    
+# AWS-CloudFormation-VPC    
      
-Note: Currently the code for public dns name and ssl certificaten is commented(Onwards line 244) as
-I do not have a public domain to test it.
+Note: App stack is using a self signed certificate   
 
-Steps for using public domain   
-   
-Goto a public domain registry and register domain   
-Create Route53 Zone for that domain   
-Get the NS record values for that zone and update Domain Registry   
-Update the 'R53PublicZoneId' paremeters in env/application.json file   
-Update 'AlbDnsRecord' (Eg: app.awscftest.com) paremeters in env/application.json file     
-Goto ACM Console and create a certificate using Domain Authentication   
-Update the 'CertificateArn' paremeter in env/application.json file     
-Uncomment the code in templates/application.yaml from line number 249    
-       
-For accessing the webpage now, get the loadbalancer dns name and goto: http://{load-balancer-dns-name}:443/    
-    
+ToDO:   
+1. Add NACLs to add more fine grained controlled traffic in subnets
+2. Use a S3 bucket to collect ALB Access Logs
      
-      
+     
+
 ## Deploy Application   
      
-```bash
-sudo apt install make
-git clone repo
+```bash    
+sudo apt install make -y
+git clone git@github.com:kpanic9/aws-vpc-cf.git
 cd aws-vpc-cf/
 make network
 make sg
+make cert
+# Update the 'CertificateArn' paremeter in env/application.json file form the output of the above target
+# For some reason imported acm cert did not work on my account, therefore I had to go with the iam server certificates
 make application
 ```
      
+For accessing the webpage, get the loadbalancer dns name and goto: https://{load-balancer-dns-name}/    
+    
+    
+### Clean up    
      
-     
-     
+```bash
+make cleanup
+```
+   
+    
+    
+### Steps for using public domain   
+   
+1. Goto a public domain registry and register domain (Or we can do it in Route53 Console as aws sells domain names)   
+2. Create Route53 Zone for that domain   
+3. Get the NS record values for that zone and update Domain Registry   
+4. Update the 'R53PublicZoneId' paremeters in env/application.json file   
+5. Update 'AlbDnsRecord' (Eg: app.awscftest.com) paremeters in env/application.json file     
+6. Goto ACM Console and create a certificate using Domain Authentication   
+7. Update the 'CertificateArn' paremeter in env/application.json file     
+8. Uncomment the code in templates/application.yaml from line number 249    
+       
+
+    
      
 
+     
+     
+     
+     
+      
 ## TODO - Theory    
    
    
@@ -171,9 +188,14 @@ Then from the Route53 or DNS server we have to create a CNAME record pointing to
    
    
    
-### Use Lambda to handle error pages   
-   
-Lambda@Edge can be used for this task.   
+### Use Lambda to handle error pages    
+     
+A cloudfront distribution and Lambda@Edge can be used for this task. It allows to execute Lambda functions in response to HTTP errors that Amazon CloudFront receives from the distribution origin origin.
+First we need to create the lambda function that is invoked when Cloudfront distribution receives a specific error code.
+Then we have to update lambda function trigger to invoke the Lambda function when cloudfront distribution receives (Origin Response Event) the error code from the lambda console enabling lambda function replication. 
+
+
+
 
 
 
